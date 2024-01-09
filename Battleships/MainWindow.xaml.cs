@@ -23,8 +23,14 @@ namespace Battleships
         public const int NumberOfShips = 3;
         public const int NumberOfPartsToAShip = 2;  // Dont change
 
+        // Stores the locations of the player & opponent battle ships
         public string[,] PlayerBattleshipLocations = new string[NumberOfShips, NumberOfPartsToAShip];
         public string[,] OpponentBattleshipLocations = new string[NumberOfShips, NumberOfPartsToAShip];
+
+        // Stores the shots from the player and opponent
+        public string[,] PlayerHits = new string[NumberOfShips, NumberOfPartsToAShip];
+        public string[,] OpponentHits = new string[NumberOfShips, NumberOfPartsToAShip];
+
         string[] NumberToLetterMap = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "V", "W", "X", "Y", "Z" };
 
         public const int NumberOfRows = 6;
@@ -50,6 +56,22 @@ namespace Battleships
             }
         }
 
+        public int GetIndexOfLetter(string Letter)
+        {
+            int ReturnedIndex = -1;
+
+            for (int i = 0; i < NumberToLetterMap.Length; i++)
+            {
+                if (Letter == NumberToLetterMap[i])
+                {
+                    ReturnedIndex = i;
+                    break;
+                }
+            }
+
+            return ReturnedIndex;
+        }
+
         public bool AuthorisedShipPlacement(string ShipPlacement)
         {
             int ShipSlot = -1;
@@ -57,27 +79,30 @@ namespace Battleships
 
             // Get total number of ships to place
             //for (int i = 0; i < PlayerBattleshipLocations.Length-1; i++)
-            for (int i = 0; i < NumberOfShips - 1; i++)
+
+
+            // Cycles through the max combination of ships
+            for (int Ship=0; Ship < NumberOfShips; Ship++)
             {
-                // Get number of spaces per ship
-                for (int i_ = 0; i_ < NumberOfPartsToAShip - 1; i_++)
+
+                // Cycles through the max number of spaces of ships
+                for (int Space=0; Space < NumberOfPartsToAShip; Space++)
                 {
-                    // Check if its a new ship
-                    if (i_ == 0 && PlayerBattleshipLocations[i, i_] == null)
+                    if (Space == 0 && PlayerBattleshipLocations[Ship, Space] == null)
                     {
-                        ShipButtonSlot = 0;
-                        ShipSlot = i;
+                        ShipSlot = Ship;
+                        ShipButtonSlot = Space;
                         break;
                     }
-                    // Checks if its contributing to a current ship slot
-                    else if (PlayerBattleshipLocations[i, i_] == null)
+                    else if (PlayerBattleshipLocations[Ship, Space] == null)
                     {
-                        ShipButtonSlot = i_;
-                        ShipSlot = i;
+                        ShipSlot = Ship;
+                        ShipButtonSlot = Space;
+                        break;
                     }
                 }
 
-                if (ShipSlot == -1 || ShipButtonSlot == -1)
+                if (ShipSlot != -1 || ShipButtonSlot != -1)
                 {
                     break;
                 }
@@ -89,7 +114,31 @@ namespace Battleships
                 return false;
             }
 
-            PlayerBattleshipLocations[ShipSlot, ShipButtonSlot] = ShipPlacement;
+            if (ShipButtonSlot != 0)
+            {
+                string PreviousSpace = PlayerBattleshipLocations[ShipSlot, ShipButtonSlot-1];
+                string Prev_Column = PreviousSpace.Substring(0, 1);
+                string Prev_Row = PreviousSpace.Substring(1);
+
+                string Cur_Column = ShipPlacement.Substring(0, 1);
+                string Cur_Row = ShipPlacement.Substring(1);
+
+                // If the row or column doesn't match, reject the input
+                if (Cur_Column != Prev_Column && Cur_Row != Prev_Row)
+                {
+                    return false;
+                }
+
+                if (GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) + 1 && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) - 1)
+                {
+                    return false;
+                }
+
+                Label1.Content = Prev_Column + " " + Prev_Row;
+
+            }
+
+             PlayerBattleshipLocations[ShipSlot, ShipButtonSlot] = ShipPlacement;
             //Label1.Content = PlayerBattleshipLocations[ShipSlot, ShipButtonSlot];
 
             return true;
