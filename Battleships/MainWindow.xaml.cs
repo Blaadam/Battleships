@@ -72,14 +72,10 @@ namespace Battleships
             return ReturnedIndex;
         }
 
-        public bool AuthorisedShipPlacement(string ShipPlacement)
+        public bool AuthorisedShipPlacement(string[,] BattleShipLocations, string ShipPlacement)
         {
             int ShipSlot = -1;
             int ShipButtonSlot = -1;
-
-            // Get total number of ships to place
-            //for (int i = 0; i < PlayerBattleshipLocations.Length-1; i++)
-
 
             // Cycles through the max combination of ships
             for (int Ship=0; Ship < NumberOfShips; Ship++)
@@ -88,13 +84,13 @@ namespace Battleships
                 // Cycles through the max number of spaces of ships
                 for (int Space=0; Space < NumberOfPartsToAShip; Space++)
                 {
-                    if (Space == 0 && PlayerBattleshipLocations[Ship, Space] == null)
+                    if (Space == 0 && BattleShipLocations[Ship, Space] == null)
                     {
                         ShipSlot = Ship;
                         ShipButtonSlot = Space;
                         break;
                     }
-                    else if (PlayerBattleshipLocations[Ship, Space] == null)
+                    else if (BattleShipLocations[Ship, Space] == null)
                     {
                         ShipSlot = Ship;
                         ShipButtonSlot = Space;
@@ -111,17 +107,25 @@ namespace Battleships
 
             if (ShipSlot == -1 || ShipButtonSlot == -1)
             {
+                Label1.Content = "No available slots";
                 return false;
             }
 
+            // Checks if theres already a point existing for that ship
             if (ShipButtonSlot != 0)
             {
-                string PreviousSpace = PlayerBattleshipLocations[ShipSlot, ShipButtonSlot-1];
+                string PreviousSpace = BattleShipLocations[ShipSlot, ShipButtonSlot-1];
                 string Prev_Column = PreviousSpace.Substring(0, 1);
                 string Prev_Row = PreviousSpace.Substring(1);
 
                 string Cur_Column = ShipPlacement.Substring(0, 1);
                 string Cur_Row = ShipPlacement.Substring(1);
+
+                if (PreviousSpace == ShipPlacement)
+                {
+                    Label1.Content = "Your points cannot be the same...";
+                    return false;
+                }
 
                 // If the row or column doesn't match, reject the input
                 if (Cur_Column != Prev_Column && Cur_Row != Prev_Row)
@@ -129,18 +133,16 @@ namespace Battleships
                     return false;
                 }
 
-                if (GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) + 1 && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) - 1)
+                if ((GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) + 1 && GetIndexOfLetter(Cur_Column) != GetIndexOfLetter(Prev_Column) - 1) || (int.Parse(Cur_Row) != int.Parse(Prev_Row) && int.Parse(Cur_Row) != int.Parse(Prev_Row) - 1 && int.Parse(Cur_Row) != int.Parse(Prev_Row) + 1))
                 {
+                    Label1.Content = "Your points must be placed next to each other!";
                     return false;
                 }
 
                 Label1.Content = Prev_Column + " " + Prev_Row;
-
             }
 
-             PlayerBattleshipLocations[ShipSlot, ShipButtonSlot] = ShipPlacement;
-            //Label1.Content = PlayerBattleshipLocations[ShipSlot, ShipButtonSlot];
-
+            BattleShipLocations[ShipSlot, ShipButtonSlot] = ShipPlacement;
             return true;
         }
 
@@ -159,7 +161,7 @@ namespace Battleships
 
             if (CurrentTurn == "ShipSelect" && PlayerShips.IsAncestorOf(b))
             {
-                if (AuthorisedShipPlacement(b.Name))
+                if (AuthorisedShipPlacement(PlayerBattleshipLocations, b.Name))
                 {
                     b.Background = Brushes.Red;
                 }
