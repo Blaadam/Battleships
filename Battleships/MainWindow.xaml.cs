@@ -20,21 +20,21 @@ namespace Battleships
     /// </summary>
     public partial class MainWindow : Window
     {
-        public string[,] BattleshipLocations = { { "1", "4", "2" } };
+        public string[,] BattleshipLocations = { { "", "", "" }, { "", "", "" }, { "", "","" } };
+        string[] NumberToLetterMap = { "A" , "B", "C", "D", "E", "F", "G"};
 
-        public MainWindow()
+        public void SetShips(Grid ShipGrid)
         {
-            InitializeComponent();
 
             int count = 1;
-            
-            for (int i = 0; i < 5; i++)
+
+            for (int i = 0; i < 6; i++)
             {
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 6; j++)
                 {
                     Button MyControl1 = new Button();
                     MyControl1.Content = count.ToString();
-                    MyControl1.Name = "Button" + count.ToString();
+                    MyControl1.Name = NumberToLetterMap[i] + j.ToString();
                     MyControl1.Click += Button_Click;
 
                     Grid.SetColumn(MyControl1, j);
@@ -43,6 +43,13 @@ namespace Battleships
                     count = count + 1;
                 }
             }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            SetShips(PlayerShips);
             
 
         }
