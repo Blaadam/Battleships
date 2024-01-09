@@ -45,6 +45,7 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
+                <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition/>
@@ -52,7 +53,9 @@
                 <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
         </Grid>
+        <Label Name="Label1"  Content="ono" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="3" Margin="0,0,0,84"/>
     </Grid>
 </Window>
