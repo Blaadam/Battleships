@@ -36,6 +36,9 @@ namespace Battleships
         public const int NumberOfRows = 6;
         public const int NumberOfColumns = 6;
 
+        // Used to stop the user from clicking too much
+        public bool Debounce = false;
+
         public void SetShips(Grid ShipGrid)
         {
             // Collumns
@@ -72,6 +75,31 @@ namespace Battleships
             return ReturnedIndex;
         }
 
+        public bool GetBlankSpace(string[,] BattleShipLocations)
+        {
+            bool BlankSpace = false;
+
+            // Cycles through the max combination of ships
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] == null)
+                    {
+                        BlankSpace = true;
+                        break;
+                    }
+                }
+
+                if (BlankSpace)
+                {
+                    break;
+                }
+            }
+            return BlankSpace;
+        }
+
         public bool AuthorisedShipPlacement(string[,] BattleShipLocations, string ShipPlacement)
         {
             int ShipSlot = -1;
@@ -80,17 +108,10 @@ namespace Battleships
             // Cycles through the max combination of ships
             for (int Ship=0; Ship < NumberOfShips; Ship++)
             {
-
                 // Cycles through the max number of spaces of ships
                 for (int Space=0; Space < NumberOfPartsToAShip; Space++)
                 {
-                    if (Space == 0 && BattleShipLocations[Ship, Space] == null)
-                    {
-                        ShipSlot = Ship;
-                        ShipButtonSlot = Space;
-                        break;
-                    }
-                    else if (BattleShipLocations[Ship, Space] == null)
+                    if (BattleShipLocations[Ship, Space] == null)
                     {
                         ShipSlot = Ship;
                         ShipButtonSlot = Space;
@@ -98,6 +119,7 @@ namespace Battleships
                     }
                 }
 
+                // Breaks out the loop if a slot is found
                 if (ShipSlot != -1 || ShipButtonSlot != -1)
                 {
                     break;
@@ -105,6 +127,7 @@ namespace Battleships
 
             }
 
+            // If theres no available slots, deny the authorisation
             if (ShipSlot == -1 || ShipButtonSlot == -1)
             {
                 Label1.Content = "No available slots";
@@ -130,6 +153,7 @@ namespace Battleships
                 // If the row or column doesn't match, reject the input
                 if (Cur_Column != Prev_Column && Cur_Row != Prev_Row)
                 {
+                    Label1.Content = "You must choose a button in the same column or row!";
                     return false;
                 }
 
@@ -146,6 +170,33 @@ namespace Battleships
             return true;
         }
 
+        public string GetRandomSpace()
+        {
+            Random RNG = new Random();
+            int LetterIndex = RNG.Next(NumberOfColumns);
+            string Letter = NumberToLetterMap[LetterIndex];
+
+            int RandomRow = RNG.Next(NumberOfRows);
+
+            string CellName = Letter + RandomRow.ToString();
+            return CellName;
+        }
+
+        public void GenerateOpponentShips()
+        {
+            while (GetBlankSpace(OpponentBattleshipLocations))
+            {
+                string CellName = GetRandomSpace();
+                AuthorisedShipPlacement(OpponentBattleshipLocations, CellName);
+            }
+            Label1.Content = "Enemy ships generated!";
+        }
+
+        public void GenerateOpponentShot()
+        {
+            string CellShot = GetRandomSpace();
+        }
+
         public String CurrentTurn = "ShipSelect";
 
         public MainWindow()
@@ -155,8 +206,14 @@ namespace Battleships
             SetShips(PlayerShips);
             SetShips(PlayerShots);
         }
-        private void Button_Click(object sender, RoutedEventArgs e)
+        async private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (Debounce)
+            {
+                return;
+            }
+
+            Debounce = true;
             Button b = (Button)sender;
 
             if (CurrentTurn == "ShipSelect" && PlayerShips.IsAncestorOf(b))
@@ -165,8 +222,21 @@ namespace Battleships
                 {
                     b.Background = Brushes.Red;
                 }
-            }
-        }
 
+               if (!GetBlankSpace(PlayerBattleshipLocations))
+                {
+                    GenerateOpponentShips();
+
+                    CurrentTurn = "ShotSelect";
+                }
+            }
+            else if (CurrentTurn == "ShotSelect" && PlayerShots.IsAncestorOf(b))
+            {
+                Label1.Content = "Shot fired!";
+                await Task.Delay(1000);
+                Label1.Content = "The opponent shot back!";
+            }
+            Debounce = false;
+        }
     }
 }
