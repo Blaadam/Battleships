@@ -39,6 +39,11 @@ namespace Battleships
         // Used to stop the user from clicking too much
         public bool Debounce = false;
 
+        public void GameOver(bool PlayerWon)
+        {
+
+        }
+
         public void SetShips(Grid ShipGrid)
         {
             // Collumns
@@ -57,6 +62,48 @@ namespace Battleships
                     ShipGrid.Children.Add(MyControl1);
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns a list containing the ship slot and the ship button slot.
+        /// Order: [0] = ShipSlot, [1] = ShipButtonSlot
+        /// </summary>
+        /// <param name="BattleShipLocations"></param>
+        /// <returns></returns>
+        public List<int> GetPointerToShip(string[,] BattleShipLocations, string? ShipCoordinate)
+        {
+
+            List<int> Response = new List<int>();
+
+            int ShipSlot = -1;
+            int ShipButtonSlot = -1;
+
+            // Cycles through the max combination of ships
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] == ShipCoordinate)
+                    {
+                        ShipSlot = Ship;
+                        ShipButtonSlot = Space;
+                        break;
+                    }
+                }
+
+                // Breaks out the loop if a slot is found
+                if (ShipSlot != -1 || ShipButtonSlot != -1)
+                {
+                    break;
+                }
+
+            }
+            
+            Response.Add(ShipSlot);
+            Response.Add(ShipButtonSlot);
+
+            return Response;
         }
 
         public int GetIndexOfLetter(string Letter)
@@ -169,6 +216,17 @@ namespace Battleships
             BattleShipLocations[ShipSlot, ShipButtonSlot] = ShipPlacement;
             return true;
         }
+        public Button? GetCellFromGrid(Grid grid, string CellName)
+        {
+            foreach (UIElement child in grid.Children)
+            {
+                if (child is Button button && button.Name == CellName)
+                {
+                    return (Button)child;
+                }
+            }
+            return null;
+        }
 
         public string GetRandomSpace()
         {
@@ -192,9 +250,101 @@ namespace Battleships
             Label1.Content = "Enemy ships generated!";
         }
 
+        public bool CheckIfCellHasShip(string[,] BattleShipLocations, string ShipCell)
+        {
+            bool HasShip = false;
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] == ShipCell)
+                    {
+                        HasShip = true;
+                        break;
+                    }
+                }
+
+                // Breaks out the loop if a slot is found
+                if (HasShip)
+                {
+                    break;
+                }
+
+            }
+
+            return HasShip;
+        }
+
+        public bool ShipsStillExist(string[,] BattleShipLocations)
+        {
+            bool HasShip = false;
+
+            string? CellName = null;
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] != null && BattleShipLocations[Ship, Space] != "")
+                    {
+                        CellName = BattleShipLocations[Ship, Space];
+                        break;
+                    }
+                }
+
+                // Breaks out the loop if a ship part is found
+                if (HasShip)
+                {
+                    break;
+                }
+
+            }
+
+            if (CellName == null)
+            {
+                return false;
+            }
+
+            return HasShip;
+        }
+
+        public void HandlePlayerShot()
+        {
+
+        }
+
         public void GenerateOpponentShot()
         {
-            string CellShot = GetRandomSpace();
+            string CellShot = "";
+
+            Button? DownedShip = null;
+
+            while (DownedShip == null) {
+                CellShot = GetRandomSpace();
+                DownedShip = GetCellFromGrid(this.PlayerShips, CellShot);
+                if (DownedShip != null && DownedShip.Background == Brushes.White)
+                {
+                    DownedShip = null;
+                }
+            }
+
+            if (DownedShip == null)
+            {
+                return;
+            }
+
+            DownedShip.Background = Brushes.White;
+
+            Label1.Content = "They shot: " + CellShot;
+
+            if (!CheckIfCellHasShip(PlayerBattleshipLocations ,CellShot))
+            {
+                Label1.Content = "Their shot " + CellShot + " missed";
+                return;
+            }
+
+            Label1.Content = "Your ship was hit! " + CellShot;
         }
 
         public String CurrentTurn = "ShipSelect";
@@ -235,6 +385,7 @@ namespace Battleships
                 Label1.Content = "Shot fired!";
                 await Task.Delay(1000);
                 Label1.Content = "The opponent shot back!";
+                GenerateOpponentShot();
             }
             Debounce = false;
         }
