@@ -52,14 +52,15 @@ namespace Battleships
                 // Rows
                 for (int j = 0; j < NumberOfRows; j++)
                 {
-                    Button MyControl1 = new Button();
-                    MyControl1.Content = NumberToLetterMap.GetValue(i) + j.ToString();
-                    MyControl1.Name = NumberToLetterMap.GetValue(i) + j.ToString();
-                    MyControl1.Click += Button_Click;
+                    Button ShipButtonControl = new Button();
+                    ShipButtonControl.Content = NumberToLetterMap.GetValue(i) + j.ToString();
+                    ShipButtonControl.Name = NumberToLetterMap.GetValue(i) + j.ToString();
+                    ShipButtonControl.Click += Button_Click;
+                    ShipButtonControl.Background = Brushes.Gray;
 
-                    Grid.SetColumn(MyControl1, j);
-                    Grid.SetRow(MyControl1, i);
-                    ShipGrid.Children.Add(MyControl1);
+                    Grid.SetColumn(ShipButtonControl, j);
+                    Grid.SetRow(ShipButtonControl, i);
+                    ShipGrid.Children.Add(ShipButtonControl);
                 }
             }
         }
@@ -309,8 +310,47 @@ namespace Battleships
             return HasShip;
         }
 
-        public void HandlePlayerShot()
+        public bool RemoveShipEntry(string[,] BattleShipLocations, string ShipCell)
         {
+            bool DeletedShip = false;
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] == null || BattleShipLocations[Ship, Space] == "")
+                    {
+                        continue;
+                    }
+                    if (BattleShipLocations[Ship, Space] == ShipCell)
+                    {
+                        DeletedShip = true;
+                        BattleShipLocations[Ship, Space] = "";
+                        break;
+                    }
+                }
+
+                // Breaks out the loop if a ship part is found
+                if (DeletedShip)
+                {
+                    break;
+                }
+            }
+            return DeletedShip;
+        }
+
+        public void HandlePlayerShot(string CellName, Button CellShot)
+        {
+            bool RemovedPlayersShip = RemoveShipEntry(OpponentBattleshipLocations, CellName);
+
+            if (RemovedPlayersShip)
+            {
+                CellShot.Background = Brushes.Yellow;
+            }
+            else
+            {
+                CellShot.Background = Brushes.White;
+            }
 
         }
 
@@ -335,6 +375,8 @@ namespace Battleships
             }
 
             DownedShip.Background = Brushes.White;
+
+            RemoveShipEntry(PlayerBattleshipLocations, CellShot);
 
             Label1.Content = "They shot: " + CellShot;
 
@@ -383,6 +425,7 @@ namespace Battleships
             else if (CurrentTurn == "ShotSelect" && PlayerShots.IsAncestorOf(b))
             {
                 Label1.Content = "Shot fired!";
+                HandlePlayerShot(b.Name, b);
                 await Task.Delay(1000);
                 Label1.Content = "The opponent shot back!";
                 GenerateOpponentShot();
