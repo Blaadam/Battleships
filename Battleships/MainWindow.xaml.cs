@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,12 +37,36 @@ namespace Battleships
         public const int NumberOfRows = 6;
         public const int NumberOfColumns = 6;
 
+        Brush HitColour = Brushes.Red;
+        Brush ShipColour = Brushes.LightGray;
+        Brush MissedColour = Brushes.White;
+        Brush WaterColour = Brushes.CadetBlue;
+
+        public String CurrentTurn = "ShipSelect";
+
         // Used to stop the user from clicking too much
         public bool Debounce = false;
 
         public void GameOver(bool PlayerWon)
         {
+            if (PlayerWon)
+            {
+                Label1.Content = "YOU WON!";
+                EndScreenText.Text = "GAME OVER! YOU WON";
+            }
+            else
+            { 
+                Label1.Content = "YOU LOST!";
+                EndScreenText.Text = "GAME OVER! YOU LOST";
+            }
+            this.MainView.Visibility = Visibility.Hidden;
+            this.EndScreen.Visibility = Visibility.Visible;
+        }
 
+        public void SetCellColour(Button button, Brush colour)
+        {
+            button.Background = colour;
+            button.BorderBrush = colour;
         }
 
         public void SetShips(Grid ShipGrid)
@@ -56,7 +81,8 @@ namespace Battleships
                     ShipButtonControl.Content = NumberToLetterMap.GetValue(i) + j.ToString();
                     ShipButtonControl.Name = NumberToLetterMap.GetValue(i) + j.ToString();
                     ShipButtonControl.Click += Button_Click;
-                    ShipButtonControl.Background = Brushes.Gray;
+
+                    SetCellColour(ShipButtonControl, WaterColour);
 
                     Grid.SetColumn(ShipButtonControl, j);
                     Grid.SetRow(ShipButtonControl, i);
@@ -123,6 +149,26 @@ namespace Battleships
             return ReturnedIndex;
         }
 
+        public int GetNumberOfShipsRemaining(string[,] BattleShipLocations)
+        {
+            int ShipsLeft = 0;
+
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    if (BattleShipLocations[Ship, Space] != null && BattleShipLocations[Ship, Space] != "")
+                    {
+                        ShipsLeft++;
+                        break;
+                    }
+                }
+            }
+
+            return ShipsLeft;
+        }
+
         public bool GetBlankSpace(string[,] BattleShipLocations)
         {
             bool BlankSpace = false;
@@ -133,7 +179,7 @@ namespace Battleships
                 // Cycles through the max number of spaces of ships
                 for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
                 {
-                    if (BattleShipLocations[Ship, Space] == null)
+                    if (BattleShipLocations[Ship, Space] == null || BattleShipLocations[Ship, Space] == "")
                     {
                         BlankSpace = true;
                         break;
@@ -146,6 +192,33 @@ namespace Battleships
                 }
             }
             return BlankSpace;
+        }
+
+        public bool CheckIfShipIsAlreadyPlaced(string[,] BattleShipLocations, string ShipPlacement)
+        {
+            bool ShipExists = false;
+
+            for (int Ship = 0; Ship < NumberOfShips; Ship++)
+            {
+                // Cycles through the max number of spaces of ships
+                for (int Space = 0; Space < NumberOfPartsToAShip; Space++)
+                {
+                    // Checks if a ship is being spawned on another ship
+                    if (BattleShipLocations[Ship, Space] == ShipPlacement)
+                    {
+                        ShipExists = true;
+                        break;
+                    }
+                }
+
+                // Breaks out the loop if a slot is found
+                if (ShipExists)
+                {
+                    break;
+                }
+            }
+
+            return ShipExists;
         }
 
         public bool AuthorisedShipPlacement(string[,] BattleShipLocations, string ShipPlacement)
@@ -179,6 +252,11 @@ namespace Battleships
             if (ShipSlot == -1 || ShipButtonSlot == -1)
             {
                 Label1.Content = "No available slots";
+                return false;
+            }
+
+            if (CheckIfShipIsAlreadyPlaced(BattleShipLocations, ShipPlacement))
+            {
                 return false;
             }
 
@@ -345,11 +423,11 @@ namespace Battleships
 
             if (RemovedPlayersShip)
             {
-                CellShot.Background = Brushes.Yellow;
+                SetCellColour(CellShot, HitColour);
             }
             else
             {
-                CellShot.Background = Brushes.White;
+                SetCellColour(CellShot, MissedColour);
             }
 
         }
@@ -363,7 +441,7 @@ namespace Battleships
             while (DownedShip == null) {
                 CellShot = GetRandomSpace();
                 DownedShip = GetCellFromGrid(this.PlayerShips, CellShot);
-                if (DownedShip != null && DownedShip.Background == Brushes.White)
+                if (DownedShip != null && DownedShip.Background != WaterColour && DownedShip.Background != ShipColour)
                 {
                     DownedShip = null;
                 }
@@ -374,9 +452,7 @@ namespace Battleships
                 return;
             }
 
-            DownedShip.Background = Brushes.White;
-
-            RemoveShipEntry(PlayerBattleshipLocations, CellShot);
+            SetCellColour(DownedShip, MissedColour);
 
             Label1.Content = "They shot: " + CellShot;
 
@@ -386,10 +462,11 @@ namespace Battleships
                 return;
             }
 
+            RemoveShipEntry(PlayerBattleshipLocations, CellShot);
+
+            SetCellColour(DownedShip, HitColour);
             Label1.Content = "Your ship was hit! " + CellShot;
         }
-
-        public String CurrentTurn = "ShipSelect";
 
         public MainWindow()
         {
@@ -412,7 +489,7 @@ namespace Battleships
             {
                 if (AuthorisedShipPlacement(PlayerBattleshipLocations, b.Name))
                 {
-                    b.Background = Brushes.Red;
+                    SetCellColour(b, ShipColour);
                 }
 
                if (!GetBlankSpace(PlayerBattleshipLocations))
@@ -421,16 +498,47 @@ namespace Battleships
 
                     CurrentTurn = "ShotSelect";
                 }
+
+                Debounce = false;
+                return;
             }
             else if (CurrentTurn == "ShotSelect" && PlayerShots.IsAncestorOf(b))
             {
+                if (b.Background != WaterColour)
+                {
+                    Debounce = false;
+                    return;
+                }
+
                 Label1.Content = "Shot fired!";
                 HandlePlayerShot(b.Name, b);
                 await Task.Delay(1000);
                 Label1.Content = "The opponent shot back!";
                 GenerateOpponentShot();
             }
+
+            Label1.Content = GetNumberOfShipsRemaining(PlayerBattleshipLocations).ToString() + " " + GetNumberOfShipsRemaining(OpponentBattleshipLocations).ToString();
+
+           if (GetNumberOfShipsRemaining(OpponentBattleshipLocations) <= 0)
+            {
+                GameOver(true);
+            }
+            else if (GetNumberOfShipsRemaining(PlayerBattleshipLocations) <= 0)
+            {
+                GameOver(false);
+            }
             Debounce = false;
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            Process.Start(Process.GetCurrentProcess().MainModule.FileName);
+            Application.Current.Shutdown();
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Application.Current.Shutdown();
         }
     }
 }
